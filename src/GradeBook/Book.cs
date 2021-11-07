@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 namespace GradeBook
 {
     public delegate void GradeAddedDelegated(object sender, EventArgs args);
@@ -10,23 +11,89 @@ namespace GradeBook
         {
             Name = name;
         }
-
-        public string Name{ get; set;}
+        public string Name { get; set; }
     }
-    public class Book : NameObject
+
+    public interface IBook
     {
-        
-        // this is a constructor that initialise the name and grades
-        public Book(string name)
+        void AddGrade(double grade);
+        Statistics GetStatistics();
+        string Name { get; }
+        event GradeAddedDelegated GradeAdded;
+    }
+    public abstract class Book : NameObject, IBook
+    {
+        public Book(string name) : base(name)
         {
-            grades= new List<double>();
+        }
+        public abstract event GradeAddedDelegated GradeAdded;
+        //public virtural event GradeAddedDelegated GradeAdded;
+        //virtural allow the derived class to override the implementation for this detail for this method
+        public abstract Statistics GetStatistics();
+        //abstract is already a virtual class
+        public abstract void AddGrade(double grade);
+    }
+    public class DiskBook : Book
+    {
+        public DiskBook(string name) : base(name)
+        {
+        }
+
+        public override event GradeAddedDelegated GradeAdded;
+
+        public override Statistics GetStatistics()
+        {
+            var result = new Statistics();
+
+            using(var reader = File.OpenText($"{Name}.txt"))
+            {
+               var line = reader.ReadLine();
+
+               while(line != null)
+               {
+                   var number = double.Parse(line);
+                   result.Add(number);
+                   line = reader.ReadLine();
+               }
+            }
+
+            return result;
+        }
+
+        public override void AddGrade(double grade)
+        {
+            using (var writer = File.AppendText($"{Name}.txt"))
+            {
+                writer.WriteLine(grade);
+                if (GradeAdded != null)
+                {
+                    GradeAdded(this, new EventArgs());
+                }
+            }
+
+            //dispose() and close() clean up and free the underlying resource
+            //(when you write grade to a file and quite it clean up the txt file in order for the next writer to write in file)
+            //writer.Dispose();
+            // here we use using statement instead of dispose(),so it can automatically close and clean up  as soon as we are
+            //finishing working with them
+        }
+
+    }
+    public class InMemoryBook : Book
+    {
+
+        // this is a constructor that initialise the name and grades
+        //base() means accessing the constructor of the base class
+        public InMemoryBook(string name) : base(name)
+        {
+            grades = new List<double>();
             //Name is field, name is parameter
-            Name=name;
+            Name = name;
 
         }
         public void AddLetter(char letter)
         {
-            switch(letter)
+            switch (letter)
             {
                 case 'A':
                     AddGrade(90);
@@ -35,7 +102,7 @@ namespace GradeBook
                 case 'B':
                     AddGrade(80);
                     break;
-                
+
                 case 'C':
                     AddGrade(70);
                     break;
@@ -46,82 +113,49 @@ namespace GradeBook
 
             }
         }
-        public void AddGrade( double grade)
+        public override void AddGrade(double grade)
         {
-            
-           if (grade <= 100 && grade >=0)
-           {
-               grades.Add(grade);
-               if(GradeAdded != null)
-               {
-                   GradeAdded(this, new EventArgs());
-               }
-           } 
-           else
-           {
-               throw new ArgumentException($"Invalid {nameof(grade)}");
-           }    
+
+            if (grade <= 100 && grade >= 0)
+            {
+                grades.Add(grade);
+                if (GradeAdded != null)
+                {
+                    GradeAdded(this, new EventArgs());
+                }
+            }
+            else
+            {
+                throw new ArgumentException($"Invalid {nameof(grade)}");
+            }
 
         }
-        public event GradeAddedDelegated GradeAdded;
-        public Statistics GetStatistics()
+        public override event GradeAddedDelegated GradeAdded;
+        public override Statistics GetStatistics()
         {
-            
-            var result=new Statistics();
-            result.Average = 0.0;
-            //just a property double type and start at the lowest possible double type value
-            result.High= double.MinValue;
-            result.Low= double.MaxValue;
 
-           
-            
-            for(var index=0; index < grades.Count; index+=1 )
+            var result = new Statistics();
+
+
+
+            for (var index = 0; index < grades.Count; index += 1)
             {
-                
-                result.High= Math.Max(grades[index],result.High);
-                result.Low=Math.Min(grades[index],result.Low);
-                result.Average+=grades[index];
-               
-            }       
-            
-             
-            result.Average/=grades.Count;
-            switch(result.Average)
-            {
-                case var d when d>=90.0:
-                    result.letter ='A';
-                    break;
-                case var d when d>=80.0:
-                    result.letter ='B';
-                    break;
-
-                case var d when d>=70.0:
-                    result.letter ='C';
-                    break;
-
-                case var d when d>=60.0:
-                    result.letter ='D';
-                    break;
-                
-                default:
-                    result.letter='A';
-                    break;
-                
+                result.Add(grades[index]);
             }
 
             return result;
-         
-           
+
+
 
         }
         //this is a field, so the method can access it
         //private mean this can only be assessible by the book class
         private List<double> grades;
 
-        public string Name{ get;  set;}
+        public string Name { get; set; }
 
-        readonly string category="Science";
-              
+        readonly string category = "Science";
+
     }
 
 }
