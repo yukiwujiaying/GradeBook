@@ -78,9 +78,9 @@ namespace GradeBook.Tests
         //Instead what i will get is a reference to the memory location of where that variable is stored
         //here for example the book1 is related to this method
         //compare with the below method without ref
-        private void GetBookSetName(ref Book book, string name)
+        private void GetBookSetName(ref InMemoryBook book, string name)
         {
-            book =new Book(name);
+            book =new InMemoryBook(name);
         }
 
 
@@ -97,9 +97,9 @@ namespace GradeBook.Tests
         }
 
         // This is reference to a new book object which is not realted to book 1
-        private void GetBookSetName(Book book, string name)
+        private void GetBookSetName(InMemoryBook book, string name)
         {
-            book =new Book(name);
+            book =new InMemoryBook(name);
         }
 
 
@@ -115,7 +115,7 @@ namespace GradeBook.Tests
             
         }
 
-        private void SetName(Book book, string newname)
+        private void SetName(InMemoryBook book, string newname)
         {
             book.Name= newname;
         }
@@ -146,9 +146,9 @@ namespace GradeBook.Tests
             
             
         }
-        Book GetBook(string name)
+        InMemoryBook GetBook(string name)
         {
-            return new Book(name);
+            return new InMemoryBook(name);
 
         }
     }
